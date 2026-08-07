@@ -1,0 +1,12 @@
+{
+  "atDirectives": [
+    {
+      "name": "tailwind",
+      "description": "Tailwind CSS base/components/utilities directives"
+    },
+    {
+      "name": "apply",
+      "description": "Apply Tailwind utility classes"
+    }
+  ]
+}

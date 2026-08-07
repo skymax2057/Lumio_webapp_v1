@@ -1,0 +1,387 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// PostgreSQL for production scalability, better performance, full-text search, and advanced features
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                String          @id @default(cuid())
+  name              String?
+  email             String?         @unique
+  emailVerified     DateTime?
+  password          String?
+  image             String?
+  bio               String?         @default("Créateur passionné sur Lumio Sanctuary.")
+  role              String          @default("USER")
+  followersCount    Int             @default(0)
+  followingCount    Int             @default(0)
+  totalLikes        Int             @default(0)
+  totalViews        Int             @default(0)
+  isVerified        Boolean         @default(false)
+  isPro             Boolean         @default(false)
+  accounts          Account[]
+  sessions          Session[]
+  images            Image[]
+  likes             Like[]
+  reactions         Reaction[]
+  notifications     Notification[]  @relation("ReceivedNotifications")
+  actions           Notification[]  @relation("ActedNotifications")
+  collections       Collection[]
+  comments          Comment[]
+  following         Follow[]        @relation("following")
+  followers         Follow[]        @relation("followers")
+  profile           UserProfile?
+  collectionLikes   CollectionLike[]
+  commentLikes      CommentLike[]
+  twoFactorSecret   TwoFactorSecret?
+
+  @@index([email])
+  @@index([role])
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
+
+model UserProfile {
+  id                String          @id @default(cuid())
+  userId            String          @unique
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Informations personnelles
+  location          String?
+  website           String?
+  birthDate         DateTime?
+  languages         String?         @default("[]") // JSON array
+  occupation        String?
+  company           String?
+  
+  // Préférences artistiques
+  favoriteStyles    String?         @default("[]") // JSON array
+  favoriteColors    String?         @default("[]") // JSON array  
+  favoriteMoods     String?         @default("[]") // JSON array
+  
+  // Personnalisation UI
+  theme             String          @default("system")
+  layout            String          @default("grid")
+  cardSize          String          @default("medium")
+  animationsEnabled Boolean         @default(true)
+  softGlowEnabled   Boolean         @default(true)
+  
+  // Confidentialité
+  isProfilePublic   Boolean         @default(true)
+  showEmail         Boolean         @default(false)
+  showLocation      Boolean         @default(true)
+  showBirthDate     Boolean         @default(false)
+  showStats         Boolean         @default(true)
+  
+  // Statistiques & Achievements
+  level             Int             @default(1)
+  xp                Int             @default(0)
+  streakDays        Int             @default(0)
+  lastStreakDate    DateTime?
+  achievements      String?         @default("[]") // JSON array
+  totalTimeSpent    Int             @default(0) // en secondes
+  
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  @@index([userId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  images      Image[]
+  createdAt   DateTime @default(now())
+}
+
+model Image {
+  id                String            @id @default(cuid())
+  title             String
+  description       String?
+  url               String
+  thumbnailUrl      String?
+  blurDataUrl       String?
+  width             Int               @default(1200)
+  height            Int               @default(800)
+  fileSize          Int?              // in bytes
+  format            String?           // jpeg, png, webp, avif
+  userId            String
+  categoryId        String?
+  dominantColor     String            @default("#131317")
+  palette           String            @default("[\"#131317\",\"#D4AF37\",\"#A0A0B0\"]") // JSON array as string
+  mood              String            @default("calme") // calme, énergique, mystérieuse, sereine, minimaliste, vibrante, sombre
+  tags              String            @default("[]") // JSON array as string
+  brightness        Float             @default(0.5) // 0-1
+  saturation        Float             @default(0.5) // 0-1
+  temperature       String            @default("neutral") // warm, cool, neutral
+  isFeatured        Boolean           @default(false)
+  isDeleted         Boolean           @default(false)
+  viewsCount        Int               @default(0)
+  downloadsCount    Int               @default(0)
+  sharesCount       Int               @default(0)
+  aiScore           Float?            // AI-generated quality score (0-1)
+  style             String?           // minimalist, baroque, cyberpunk, etc.
+  location          String?           // where the photo was taken
+  camera            String?           // camera info
+  license           String            @default("all-rights-reserved")
+  
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category          Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  likes             Like[]
+  reactions         Reaction[]
+  collections       CollectionImage[]
+  notifications     Notification[]
+  comments          Comment[]
+  reports           Report[]
+
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([mood])
+  @@index([dominantColor])
+  @@index([createdAt])
+  @@index([isFeatured])
+  @@index([isDeleted])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  userId    String
+  imageId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  image Image @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, imageId])
+  @@index([imageId])
+  @@index([createdAt])
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  userId    String
+  imageId   String
+  emoji     String   @default("❤️")
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  image Image @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, imageId, emoji])
+  @@index([userId])
+  @@index([imageId])
+  @@index([emoji])
+  @@index([createdAt])
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  recipientId String
+  actorId     String
+  type        String   // LIKE, COLLECTION, COMMENT, FOLLOW, SYSTEM
+  imageId     String?
+  read        Boolean  @default(false)
+  message     String
+  metadata    String?  // JSON metadata for additional data
+  createdAt   DateTime @default(now())
+
+  recipient User   @relation("ReceivedNotifications", fields: [recipientId], references: [id], onDelete: Cascade)
+  actor     User   @relation("ActedNotifications", fields: [actorId], references: [id], onDelete: Cascade)
+  image     Image? @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+model Collection {
+  id              String            @id @default(cuid())
+  title           String
+  description     String?
+  isPrivate       Boolean           @default(false)
+  isFeatured      Boolean           @default(false)
+  coverImageId    String?
+  tagsCount       Int               @default(0)
+  likesCount      Int               @default(0)
+  viewsCount      Int               @default(0)
+  userId          String
+  
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  images          CollectionImage[]
+  likes           CollectionLike[]
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([isPrivate])
+}
+
+model CollectionImage {
+  collectionId String
+  imageId      String
+  position     Int        @default(0)
+  addedAt      DateTime   @default(now())
+
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  image      Image      @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  @@id([collectionId, imageId])
+  @@index([imageId])
+}
+
+// New model for collection likes
+model CollectionLike {
+  id           String   @id @default(cuid())
+  userId       String
+  collectionId String
+  createdAt    DateTime @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, collectionId])
+  @@index([collectionId])
+}
+
+// New model for comments
+model Comment {
+  id         String   @id @default(cuid())
+  content    String
+  imageId    String
+  userId     String
+  parentId   String?  // for nested replies
+  isEdited   Boolean  @default(false)
+  likesCount Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  image  Image   @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent Comment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies Comment[] @relation("CommentReplies")
+  likes  CommentLike[]
+
+  @@index([imageId])
+  @@index([userId])
+  @@index([parentId])
+  @@index([createdAt])
+}
+
+// New model for comment likes
+model CommentLike {
+  id        String   @id @default(cuid())
+  userId    String
+  commentId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+  @@index([commentId])
+}
+
+// New model for user follows
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("following", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("followers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+}
+
+// New model for image reports
+model Report {
+  id          String   @id @default(cuid())
+  imageId     String
+  reporterId  String
+  reason      String   // inappropriate, copyright, spam, other
+  description String?
+  status      String   @default("pending") // pending, reviewed, resolved, rejected
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  image Image @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  @@index([imageId])
+  @@index([status])
+}
+
+// New model for user activity tracking
+model Activity {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // view, like, comment, share, download
+  imageId   String?
+  metadata  String?  // JSON metadata
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// New model for two-factor authentication
+model TwoFactorSecret {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  secret       String
+  backupCodes  String?  // JSON array
+  enabled      Boolean  @default(false)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+}
