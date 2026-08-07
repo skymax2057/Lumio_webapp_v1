@@ -3,42 +3,5 @@
   "devCommand": "next dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "regions": ["iad1"],
-  "env": {
-    "DATABASE_URL": {
-      "description": "SQLite database URL",
-      "required": false,
-      "value": "file:./dev.db"
-    },
-    "NEXTAUTH_SECRET": {
-      "description": "Secret key for NextAuth",
-      "required": true,
-      "generator": "secret"
-    },
-    "NEXTAUTH_URL": {
-      "description": "URL of your deployed application",
-      "required": true
-    },
-    "AUTH_SECRET": {
-      "description": "Secret key for authentication",
-      "required": true,
-      "generator": "secret"
-    },
-    "GOOGLE_CLIENT_ID": {
-      "description": "Google OAuth Client ID",
-      "required": false
-    },
-    "GOOGLE_CLIENT_SECRET": {
-      "description": "Google OAuth Client Secret",
-      "required": false
-    },
-    "GITHUB_ID": {
-      "description": "GitHub OAuth Client ID",
-      "required": false
-    },
-    "GITHUB_SECRET": {
-      "description": "GitHub OAuth Client Secret",
-      "required": false
-    }
-  }
+  "regions": ["iad1"]
 }
