@@ -3,8 +3,31 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles, Search } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useLumioStore } from "@/lib/store";
 
 export function HeroSection() {
+  const { setSearchQuery } = useLumioStore();
+  const [inputValue, setInputValue] = useState("");
+  const router = useRouter();
+
+  const handleSearch = () => {
+    const trimmed = inputValue.trim();
+    if (!trimmed) return;
+    setSearchQuery(trimmed);
+    // Scroll down to the masonry grid smoothly
+    const grid = document.getElementById("masonry-grid");
+    if (grid) {
+      grid.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      window.scrollTo({ top: 600, behavior: "smooth" });
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") handleSearch();
+  };
   return (
     <section className="relative w-full h-[600px] md:h-[700px] overflow-hidden">
       {/* Background Image */}
@@ -71,11 +94,17 @@ export function HeroSection() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
                 <input
                   type="text"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
                   placeholder="Rechercher une œuvre, un artiste..."
                   className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white placeholder:text-white/50 focus:outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all"
                 />
               </div>
-              <button className="px-6 py-4 rounded-2xl bg-gradient-to-r from-violet-500 to-blue-500 text-white font-semibold hover:from-violet-600 hover:to-blue-600 transition-all shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 flex items-center gap-2">
+              <button
+                onClick={handleSearch}
+                className="px-6 py-4 rounded-2xl bg-gradient-to-r from-violet-500 to-blue-500 text-white font-semibold hover:from-violet-600 hover:to-blue-600 transition-all shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 flex items-center gap-2"
+              >
                 <Search className="w-5 h-5" />
                 <span className="hidden sm:inline">Rechercher</span>
               </button>

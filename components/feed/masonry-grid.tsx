@@ -125,7 +125,7 @@ export function MasonryGrid({ initialImages }: MasonryGridProps) {
   }
 
   return (
-    <div className="space-y-12">
+    <div id="masonry-grid" className="space-y-12">
       {/* Header with image count */}
       {!loading && images.length > 0 && (
         <motion.div 
