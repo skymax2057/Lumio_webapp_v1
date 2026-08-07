@@ -5,9 +5,10 @@
   "framework": "nextjs",
   "regions": ["iad1"],
   "env": {
-    "POSTGRES_URL": {
-      "description": "PostgreSQL connection string (provided by Vercel Postgres)",
-      "required": true
+    "DATABASE_URL": {
+      "description": "SQLite database URL",
+      "required": false,
+      "value": "file:./dev.db"
     },
     "NEXTAUTH_SECRET": {
       "description": "Secret key for NextAuth",

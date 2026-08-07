@@ -1,6 +1,6 @@
 datasource db {
-  provider = "postgresql"
-  url      = env("POSTGRES_URL")
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 // PostgreSQL for production scalability, better performance, full-text search, and advanced features
