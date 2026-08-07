@@ -1,8 +1,10 @@
 import { auth } from "@/lib/auth";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { writeFile } from "fs/promises";
-import path from "path";
+
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 export async function POST(req: Request) {
   try {
@@ -18,56 +20,44 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Aucun fichier fourni" }, { status: 400 });
     }
 
-    // Validate file type
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!allowedTypes.includes(file.type)) {
+    if (!ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json(
         { error: "Type de fichier non supporté. Utilisez JPG, PNG, WebP ou GIF" },
         { status: 400 }
       );
     }
 
-    // Validate file size (5MB max)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
+    if (file.size > MAX_SIZE) {
       return NextResponse.json(
         { error: "Fichier trop volumineux. Maximum 5MB" },
         { status: 400 }
       );
     }
 
-    // Create unique filename
-    const timestamp = Date.now();
-    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const filename = `avatar_${session.user.id}_${timestamp}_${originalName}`;
-
-    // Save file to public/avatars directory
-    const avatarsDir = path.join(process.cwd(), "public", "avatars");
-    const filepath = path.join(avatarsDir, filename);
-
-    // Ensure directory exists
-    const fs = require("fs");
-    if (!fs.existsSync(avatarsDir)) {
-      fs.mkdirSync(avatarsDir, { recursive: true });
-    }
-
-    // Convert file to buffer and save
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    await writeFile(filepath, buffer);
+
+    // Upload to Cloudinary in the avatars folder, overwrite by user ID
+    const uploaded = await uploadToCloudinary(buffer, {
+      folder: "lumio/avatars",
+      public_id: `avatar_${session.user.id}`,
+      transformation: [
+        { width: 400, height: 400, crop: "fill", gravity: "face" },
+        { quality: "auto:good" },
+        { fetch_format: "auto" },
+      ],
+    });
 
     // Update user avatar in database
-    const avatarUrl = `/avatars/${filename}`;
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { image: avatarUrl }
+      data: { image: uploaded.url },
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      avatarUrl 
+    return NextResponse.json({
+      success: true,
+      avatarUrl: uploaded.url,
     });
-
   } catch (error) {
     console.error("Avatar upload error:", error);
     return NextResponse.json(

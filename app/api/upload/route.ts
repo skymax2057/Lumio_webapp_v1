@@ -1,9 +1,12 @@
 import { auth } from "@/lib/auth";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 import { extractColorAndMoodFromImage } from "@/lib/color-extractor";
 import { prisma } from "@/lib/prisma";
-import fs from "fs";
 import { NextResponse } from "next/server";
-import path from "path";
+
+// Max file size: 20MB
+const MAX_FILE_SIZE = 20 * 1024 * 1024;
+const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/avif", "image/gif"];
 
 export async function POST(req: Request) {
   try {
@@ -23,23 +26,35 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Fichier et titre obligatoires" }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
+    // Validate file type
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return NextResponse.json(
+        { error: "Format non supporté. Utilise JPG, PNG, WebP, AVIF ou GIF." },
+        { status: 400 }
+      );
     }
 
-    const fileExt = file.name.split(".").pop() || "jpg";
-    const fileName = `upload_${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
-    const filePath = path.join(uploadsDir, fileName);
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "Fichier trop volumineux (max 20MB)" },
+        { status: 400 }
+      );
+    }
 
-    fs.writeFileSync(filePath, buffer);
+    const buffer = Buffer.from(await file.arrayBuffer());
 
-    const imageUrl = `/uploads/${fileName}`;
+    // Upload to Cloudinary
+    const uploaded = await uploadToCloudinary(buffer, {
+      folder: "lumio/uploads",
+      transformation: [
+        { quality: "auto:good" },
+        { fetch_format: "auto" },
+      ],
+    });
 
-    // Extract color & mood
-    const colorAnalysis = extractColorAndMoodFromImage(imageUrl);
+    // Extract color & mood from Cloudinary URL
+    const colorAnalysis = extractColorAndMoodFromImage(uploaded.url);
 
     // Format tags array
     const tagsArray = tagsInput
@@ -51,16 +66,18 @@ export async function POST(req: Request) {
       data: {
         title,
         description,
-        url: imageUrl,
-        thumbnailUrl: imageUrl,
+        url: uploaded.url,
+        thumbnailUrl: uploaded.url,
         userId: session.user.id,
         categoryId: categoryId || undefined,
         dominantColor: colorAnalysis.dominantColor,
         palette: JSON.stringify(colorAnalysis.palette),
         mood: colorAnalysis.mood,
         tags: JSON.stringify(tagsArray),
-        width: 1200,
-        height: 900,
+        width: uploaded.width || 1200,
+        height: uploaded.height || 900,
+        format: uploaded.format,
+        fileSize: file.size,
       },
       include: {
         user: true,

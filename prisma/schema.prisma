@@ -1,9 +1,7 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
-// PostgreSQL for production scalability, better performance, full-text search, and advanced features
 
 generator client {
   provider = "prisma-client-js"
