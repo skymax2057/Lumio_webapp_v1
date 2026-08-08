@@ -69,13 +69,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
+        token.isOnboarded = (user as any).isOnboarded ?? false;
       }
       if (account) {
         token.provider = account.provider;
+      }
+      // Refresh isOnboarded from DB on every session update
+      if (trigger === "update" || trigger === "signIn") {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { isOnboarded: true, role: true },
+          });
+          if (dbUser) {
+            token.isOnboarded = dbUser.isOnboarded;
+            token.role = dbUser.role;
+          }
+        } catch (e) {
+          console.error("Error refreshing token:", e);
+        }
       }
       return token;
     },
@@ -84,6 +100,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
         (session.user as any).role = token.role as string;
         (session.user as any).provider = token.provider as string;
+        (session.user as any).isOnboarded = token.isOnboarded as boolean;
       }
       return session;
     },

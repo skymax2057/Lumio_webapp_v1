@@ -16,13 +16,13 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { name, description } = body;
+    const { name, description, slug: customSlug } = body;
 
     if (!name) {
       return NextResponse.json({ error: "Le nom est requis" }, { status: 400 });
     }
 
-    const slug = name
+    const slug = (customSlug || name)
       .toLowerCase()
       .trim()
       .replace(/[^a-z0-9]+/g, "-")

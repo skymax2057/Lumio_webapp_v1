@@ -2,7 +2,7 @@
 
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
-import { ArrowLeft, Image as ImageIcon, Sparkles, UploadCloud, Plus, X } from "lucide-react";
+import { ArrowLeft, Image as ImageIcon, Sparkles, UploadCloud, Plus, X, Wand2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -29,8 +29,11 @@ export default function CreateImagePage() {
   const [error, setError] = useState<string | null>(null);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategorySlug, setNewCategorySlug] = useState("");
   const [newCategoryDescription, setNewCategoryDescription] = useState("");
   const [creatingCategory, setCreatingCategory] = useState(false);
+  const [generatingCatDesc, setGeneratingCatDesc] = useState(false);
+  const [generatingPostDesc, setGeneratingPostDesc] = useState(false);
 
   useEffect(() => {
     fetchCategories();
@@ -65,6 +68,7 @@ export default function CreateImagePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newCategoryName.trim(),
+          slug: newCategorySlug.trim(),
           description: newCategoryDescription.trim(),
         }),
       });
@@ -74,6 +78,7 @@ export default function CreateImagePage() {
         setCategories([...categories, newCategory]);
         setCategoryId(newCategory.id);
         setNewCategoryName("");
+        setNewCategorySlug("");
         setNewCategoryDescription("");
         setShowCategoryForm(false);
       } else {
@@ -84,6 +89,61 @@ export default function CreateImagePage() {
       setError("Une erreur inattendue est survenue");
     } finally {
       setCreatingCategory(false);
+    }
+  };
+
+  const handleCategoryNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setNewCategoryName(val);
+    setNewCategorySlug(val.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""));
+  };
+
+  const generateCategoryDesc = async () => {
+    if (!newCategoryName.trim()) return;
+    setGeneratingCatDesc(true);
+    try {
+      const res = await fetch("/api/generate/category", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newCategoryName }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setNewCategoryDescription(data.description);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setGeneratingCatDesc(false);
+    }
+  };
+
+  const generatePostDesc = async () => {
+    if (!title.trim() && !file) {
+      setError("Il faut au moins un titre ou une image pour générer une description.");
+      return;
+    }
+    setGeneratingPostDesc(true);
+    try {
+      const formData = new FormData();
+      formData.append("title", title);
+      if (file) formData.append("image", file);
+      
+      const res = await fetch("/api/generate/post", {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDescription(data.description);
+        if (data.tags) setTags(data.tags);
+      } else {
+        setError("Erreur lors de la génération IA");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setGeneratingPostDesc(false);
     }
   };
 
@@ -259,9 +319,20 @@ export default function CreateImagePage() {
 
             {/* Description */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground">
-                Description / Note de l'artiste
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-foreground">
+                  Description / Note de l'artiste
+                </label>
+                <button
+                  type="button"
+                  onClick={generatePostDesc}
+                  disabled={generatingPostDesc || (!title && !file)}
+                  className="text-xs text-amber-500 hover:text-amber-400 flex items-center gap-1 transition-colors disabled:opacity-50"
+                >
+                  <Wand2 className="w-3.5 h-3.5" />
+                  {generatingPostDesc ? "Génération..." : "Générer avec l'IA"}
+                </button>
+              </div>
               <textarea
                 rows={3}
                 value={description}
@@ -289,22 +360,47 @@ export default function CreateImagePage() {
 
               {showCategoryForm ? (
                 <div className="p-4 rounded-2xl bg-lumio-dark/50 border border-lumio-border space-y-3">
-                  <div className="space-y-1.5">
-                    <label className="text-[11px] font-semibold text-muted-foreground">
-                      Nom de la catégorie *
-                    </label>
-                    <input
-                      type="text"
-                      value={newCategoryName}
-                      onChange={(e) => setNewCategoryName(e.target.value)}
-                      placeholder="Ex: Photographie Abstraite"
-                      className="w-full px-3 py-2 rounded-xl bg-lumio-card border border-lumio-border text-xs text-foreground focus:outline-none focus:border-violet-500"
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-muted-foreground">
+                        Nom de la catégorie *
+                      </label>
+                      <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={handleCategoryNameChange}
+                        placeholder="Ex: Photographie Abstraite"
+                        className="w-full px-3 py-2 rounded-xl bg-lumio-card border border-lumio-border text-xs text-foreground focus:outline-none focus:border-violet-500"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-semibold text-muted-foreground">
+                        Limace (Slug)
+                      </label>
+                      <input
+                        type="text"
+                        value={newCategorySlug}
+                        onChange={(e) => setNewCategorySlug(e.target.value)}
+                        placeholder="photographie-abstraite"
+                        className="w-full px-3 py-2 rounded-xl bg-lumio-card border border-lumio-border text-xs text-foreground focus:outline-none focus:border-violet-500"
+                      />
+                    </div>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[11px] font-semibold text-muted-foreground">
-                      Description (optionnel)
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-semibold text-muted-foreground">
+                        Description (optionnel)
+                      </label>
+                      <button 
+                        type="button" 
+                        onClick={generateCategoryDesc}
+                        disabled={generatingCatDesc || !newCategoryName.trim()}
+                        className="text-[11px] text-amber-500 hover:text-amber-400 flex items-center gap-1 transition-colors disabled:opacity-50"
+                      >
+                        <Wand2 className="w-3 h-3" />
+                        {generatingCatDesc ? "Génération..." : "IA"}
+                      </button>
+                    </div>
                     <textarea
                       rows={2}
                       value={newCategoryDescription}

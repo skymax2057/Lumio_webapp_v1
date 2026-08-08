@@ -20,6 +20,7 @@ model User {
   followingCount    Int             @default(0)
   totalLikes        Int             @default(0)
   totalViews        Int             @default(0)
+  isOnboarded       Boolean         @default(false)
   isVerified        Boolean         @default(false)
   isPro             Boolean         @default(false)
   accounts          Account[]

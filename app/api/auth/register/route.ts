@@ -39,6 +39,7 @@ export async function POST(req: Request) {
         password: hashedPassword,
         bio: bio || "Créateur passionné sur Lumio Sanctuary.",
         image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250",
+        isOnboarded: true,
       },
     });
 
