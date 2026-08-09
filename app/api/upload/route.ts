@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { extractColorAndMoodFromImage } from "@/lib/color-extractor";
 import { prisma } from "@/lib/prisma";
+import { uploadRateLimit, isRateLimitingEnabled } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -19,6 +20,24 @@ const uploadSchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    // Rate limiting
+    if (isRateLimitingEnabled()) {
+      const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+      const { success, limit, reset, remaining } = await uploadRateLimit.limit(ip);
+
+      if (!success) {
+        return NextResponse.json(
+          {
+            error: "Trop de requêtes d'upload. Veuillez réessayer dans quelques secondes.",
+            limit,
+            reset,
+            remaining,
+          },
+          { status: 429 }
+        );
+      }
+    }
+
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });

@@ -1,9 +1,28 @@
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { authRateLimit, isRateLimitingEnabled } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
+    // Rate limiting
+    if (isRateLimitingEnabled()) {
+      const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+      const { success, limit, reset, remaining } = await authRateLimit.limit(ip);
+
+      if (!success) {
+        return NextResponse.json(
+          {
+            error: "Trop de tentatives d'authentification. Veuillez réessayer dans quelques minutes.",
+            limit,
+            reset,
+            remaining,
+          },
+          { status: 429 }
+        );
+      }
+    }
+
     const { name, email, password, bio, interests, moods } = await req.json();
 
     // Validation
