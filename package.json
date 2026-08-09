@@ -7,10 +7,21 @@
     "build": "prisma generate && prisma db push --accept-data-loss && next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:cleanup": "tsx prisma/cleanup.ts",
-    "security:check-ssl": "tsx scripts/check-db-ssl.ts"
+    "db:studio": "prisma studio",
+    "security:check-ssl": "tsx scripts/check-db-ssl.ts",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "ci": "npm run type-check && npm run lint && npm run test:run",
+    "pre-commit": "node scripts/pre-commit.cjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",
@@ -38,15 +49,23 @@
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.13.4",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^6.0.5",
+    "@vitest/coverage-v8": "^4.1.10",
     "autoprefixer": "^10.4.20",
+    "eslint-config-prettier": "^10.1.8",
+    "jsdom": "^30.0.1",
     "postcss": "^8.5.2",
+    "prettier": "^3.9.6",
     "prisma": "^6.3.1",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.10"
   }
 }
