@@ -4,6 +4,34 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
+// Safe JSON parser that handles markdown and malformed responses
+function safeJsonParse(str: string): { description: string; tags: string } | null {
+  try {
+    // Remove markdown code blocks if present
+    let cleaned = str
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+
+    // Try to extract JSON if there's extra text around it
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      cleaned = jsonMatch[0];
+    }
+
+    const parsed = JSON.parse(cleaned);
+
+    // Validate structure
+    if (parsed && typeof parsed.description === "string" && typeof parsed.tags === "string") {
+      return { description: parsed.description, tags: parsed.tags };
+    }
+
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const session = await auth();
@@ -53,16 +81,11 @@ Renvoie la réponse sous forme d'objet JSON strict sans fioritures (pas de markd
     const response = await result.response;
     const text = response.text().trim();
 
-    // Parse JSON
-    let parsedData = { description: "", tags: "" };
-    try {
-      // Remove any potential markdown wrap just in case
-      const jsonText = text.replace(/```json/g, "").replace(/```/g, "").trim();
-      parsedData = JSON.parse(jsonText);
-    } catch (e) {
-      // Fallback if model fails to output valid JSON
-      parsedData = { description: text, tags: "art, lumio, creation" };
-    }
+    // Use safe JSON parser with fallback
+    const parsedData = safeJsonParse(text) || {
+      description: text.substring(0, 500),
+      tags: "art, lumio"
+    };
 
     return NextResponse.json(parsedData);
   } catch (error) {
