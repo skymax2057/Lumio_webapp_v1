@@ -6,6 +6,11 @@ import GithubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "./prisma";
 
+// Strict validation for NEXTAUTH_SECRET at startup
+if (!process.env.NEXTAUTH_SECRET || process.env.NEXTAUTH_SECRET.trim() === "") {
+  throw new Error("CRITICAL: NEXTAUTH_SECRET is not defined. Security compromised.");
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
@@ -116,7 +121,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return baseUrl;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || "lumio-secret-2026-key",
+  secret: process.env.NEXTAUTH_SECRET,
   events: {
     async createUser({ user }) {
       console.log("New user created:", user);
