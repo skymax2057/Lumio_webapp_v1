@@ -7,8 +7,6 @@
     "build": "prisma generate && prisma db push --accept-data-loss && next build",
     "start": "next start",
     "type-check": "tsc --noEmit",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:cleanup": "tsx prisma/cleanup.ts",
