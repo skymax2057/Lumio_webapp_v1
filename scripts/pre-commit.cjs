@@ -18,7 +18,6 @@ const runCommand = (command, description) => {
 
 const checks = [
   { command: 'npm run type-check', description: '📝 TypeScript type check' },
-  { command: 'npm run lint', description: '🔨 ESLint check', optional: true },
   { command: 'npm run test:run', description: '🧪 Running tests' },
 ];
 

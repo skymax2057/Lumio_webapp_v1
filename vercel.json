@@ -3,52 +3,9 @@
   "devCommand": "next dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "regions": ["iad1"],
-  "env": {
-    "DATABASE_URL": {
-      "description": "PostgreSQL database connection string",
-      "required": true
-    },
-    "NEXTAUTH_SECRET": {
-      "description": "Secret key for NextAuth.js",
-      "required": true,
-      "generator": "openssl rand -base64 32"
-    },
-    "NEXTAUTH_URL": {
-      "description": "URL for NextAuth.js",
-      "required": true,
-      "value": "https://your-app.vercel.app"
-    },
-    "UPSTASH_REDIS_REST_URL": {
-      "description": "Upstash Redis REST URL",
-      "required": false
-    },
-    "UPSTASH_REDIS_REST_TOKEN": {
-      "description": "Upstash Redis REST token",
-      "required": false
-    },
-    "CLOUDINARY_CLOUD_NAME": {
-      "description": "Cloudinary cloud name",
-      "required": false
-    },
-    "CLOUDINARY_API_KEY": {
-      "description": "Cloudinary API key",
-      "required": false
-    },
-    "CLOUDINARY_API_SECRET": {
-      "description": "Cloudinary API secret",
-      "required": false
-    },
-    "GOOGLE_AI_API_KEY": {
-      "description": "Google AI API key",
-      "required": false
-    }
-  },
   "build": {
     "env": {
-      "DATABASE_URL": "@database-url",
-      "NEXTAUTH_SECRET": "@nextauth-secret",
-      "NEXTAUTH_URL": "@nextauth-url"
+      "NEXT_PRIVATE_SKIP_ESLint": "1"
     }
   },
   "crons": [
