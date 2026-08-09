@@ -1,3 +1,4 @@
+import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
@@ -15,6 +16,15 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    }
+
+    if ((session.user as any).role !== "ADMIN") {
+      return NextResponse.json({ error: "Action réservée aux administrateurs" }, { status: 403 });
+    }
+
     const body = await req.json();
     const { name, description, slug: customSlug } = body;
 

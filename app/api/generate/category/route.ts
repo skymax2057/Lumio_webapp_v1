@@ -1,3 +1,4 @@
+import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -5,6 +6,15 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(req: Request) {
   try {
+    const session = await auth();
+    if (!session?.user) {
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    }
+
+    if ((session.user as any).role !== "ADMIN") {
+      return NextResponse.json({ error: "Action réservée aux administrateurs" }, { status: 403 });
+    }
+
     const { name } = await req.json();
 
     if (!name) {

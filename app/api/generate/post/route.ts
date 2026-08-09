@@ -1,3 +1,4 @@
+import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -5,6 +6,11 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export async function POST(req: Request) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const title = formData.get("title") as string;
     const image = formData.get("image") as File | null;
@@ -22,7 +28,7 @@ L'utilisateur s'apprête à publier une œuvre.`;
     if (title) {
       prompt += `\nLe titre donné est : "${title}".`;
     }
-    
+
     prompt += `\nGénère une belle description poétique (2-3 paragraphes) pour cette œuvre.
 Renvoie la réponse sous forme d'objet JSON strict sans fioritures (pas de markdown \`\`\`json) avec cette structure :
 {
@@ -46,7 +52,7 @@ Renvoie la réponse sous forme d'objet JSON strict sans fioritures (pas de markd
     const result = await model.generateContent(parts);
     const response = await result.response;
     const text = response.text().trim();
-    
+
     // Parse JSON
     let parsedData = { description: "", tags: "" };
     try {
