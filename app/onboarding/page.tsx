@@ -107,10 +107,13 @@ export default function OnboardingPage() {
         setCurrentStep("complete");
       } else {
         const data = await res.json();
-        setError(data.error || "Erreur lors de la sauvegarde");
+        const errorMessage = data.retryable 
+          ? "Connexion base de données temporairement indisponible. Réessayez dans quelques secondes."
+          : (data.error || "Erreur lors de la sauvegarde");
+        setError(errorMessage);
       }
     } catch (e) {
-      setError("Erreur réseau");
+      setError("Erreur réseau. Vérifiez votre connexion.");
     } finally {
       setLoading(false);
     }

@@ -20,8 +20,18 @@ export async function GET() {
     });
 
     return NextResponse.json({ notifications });
-  } catch (error) {
+  } catch (error: any) {
     console.error("GET /api/notifications error:", error);
+
+    // Handle connection errors gracefully
+    if (error.code === 'P1001' || error.code === 'P1003') {
+      return NextResponse.json({ 
+        notifications: [], 
+        error: "Database connection temporarily unavailable",
+        retryable: true 
+      }, { status: 503 });
+    }
+
     return NextResponse.json({ error: "Server Error" }, { status: 500 });
   }
 }

@@ -35,8 +35,17 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ success: true }, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Onboarding error:", error);
+
+    // Handle connection errors gracefully
+    if (error.code === 'P1001' || error.code === 'P1003') {
+      return NextResponse.json({ 
+        error: "Database connection temporarily unavailable. Please try again.",
+        retryable: true 
+      }, { status: 503 });
+    }
+
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
